@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <div class="download-section">
+        <div class="download-icon">✅</div>
+        <h2 style="color: #28a745; margin-bottom: 1rem;">Success!</h2>
+        <p style="font-size: 1.1rem; margin-bottom: 2rem; color: #666;">
+            Your PDF files have been merged successfully!
+        </p>
+        
+        <div style="margin-bottom: 2rem;">
+            <a href="{{ url_for('download_file', filename='merged.pdf') }}" class="btn" 
+               style="font-size: 1.1rem; padding: 15px 30px;">
+                💾 Download Merged PDF
+            </a>
+        </div>
+        
+        <div>
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                🔄 Merge Another PDF
+            </a>
+        </div>
+        
+        <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #eee;">
+            <p style="color: #999; font-size: 0.9rem;">
+                📊 File processed successfully • Ready for download
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

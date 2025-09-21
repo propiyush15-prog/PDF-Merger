@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <h2 style="text-align: center; margin-bottom: 2rem; color: #333;">Configure Merge Settings</h2>
+    
+    <form action="{{ url_for('merge_pdfs') }}" method="post">
+        <div style="margin-bottom: 2rem;">
+            <label for="output_name" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Output Filename:</label>
+            <input type="text" id="output_name" name="output_name" placeholder="merged-document.pdf" 
+                   style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem;"
+                   required>
+        </div>
+        
+        <div class="merge-options">
+            <div class="option-card selected" data-option="sequential">
+                <div class="option-icon">📄</div>
+                <h3>Sequential Merge</h3>
+                <p>Merge files in upload order</p>
+            </div>
+            <div class="option-card" data-option="alphabetical">
+                <div class="option-icon">🔤</div>
+                <h3>Alphabetical Order</h3>
+                <p>Sort files by name</p>
+            </div>
+        </div>
+        
+        <input type="hidden" id="merge_option" name="merge_option" value="sequential">
+        
+        <div style="text-align: center; margin-top: 2rem;">
+            <button type="submit" class="btn" style="margin-right: 1rem;">
+                ⚙️ Merge PDFs
+            </button>
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                ⬅️ Upload More Files
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+document.querySelectorAll('.option-card').forEach(card => {
+    card.addEventListener('click', function() {
+        document.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+        this.classList.add('selected');
+        document.getElementById('merge_option').value = this.dataset.option;
+    });
+});
+</script>
+{% endblock %}

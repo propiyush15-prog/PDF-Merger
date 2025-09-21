@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <div id="drop-zone" class="upload-area">
+        <div class="upload-icon">📄</div>
+        <div class="upload-text">Drag and drop PDF files here or click to select</div>
+        <p style="color: #999; font-size: 0.9rem;">Supports multiple PDF files</p>
+        <input type="file" id="file-input" multiple accept=".pdf" class="file-input">
+    </div>
+    
+    <div id="file-list" style="display: none;">
+        <h3>Uploaded Files (drag to reorder):</h3>
+        <ul id="sortable-files"></ul>
+    </div>
+    
+    <div style="text-align: center; margin-top: 2rem;">
+        <button id="merge-btn" class="btn" style="display: none;">Merge PDFs</button>
+        <button id="download-btn" class="btn" style="display: none;">Download Merged PDF</button>
+    </div>
+    
+    <div id="status" style="text-align: center; margin-top: 1rem;"></div>
+</div>
+
+<script>
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+const fileList = document.getElementById('file-list');
+const mergeBtn = document.getElementById('merge-btn');
+const downloadBtn = document.getElementById('download-btn');
+const status = document.getElementById('status');
+
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', handleDrop);
+fileInput.addEventListener('change', e => handleFiles(e.target.files));
+mergeBtn.addEventListener('click', mergePDFs);
+downloadBtn.addEventListener('click', () => window.location.href = '/download');
+
+function handleDrop(e) {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    handleFiles(e.dataTransfer.files);
+}
+
+let uploadedFiles = [];
+
+function handleFiles(files) {
+    const formData = new FormData();
+    let fileCount = 0;
+    
+    for (let file of files) {
+        if (file.type === 'application/pdf') {
+            formData.append('files', file);
+            fileCount++;
+        }
+    }
+    
+    if (fileCount === 0) {
+        status.innerHTML = 'Please select PDF files only';
+        return;
+    }
+    
+    status.innerHTML = 'Uploading files...';
+    
+    fetch('/upload', { method: 'POST', body: formData })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                uploadedFiles = data.files;
+                displayFileList();
+                status.innerHTML = `${data.files.length} PDF files uploaded`;
+                fileList.style.display = 'block';
+                mergeBtn.style.display = 'inline-block';
+                downloadBtn.style.display = 'none';
+            } else {
+                status.innerHTML = data.error;
+            }
+        });
+}
+
+function displayFileList() {
+    const sortableFiles = document.getElementById('sortable-files');
+    sortableFiles.innerHTML = '';
+    
+    uploadedFiles.forEach((file, index) => {
+        const li = document.createElement('li');
+        li.draggable = true;
+        li.dataset.index = index;
+        li.innerHTML = `<span>📄 ${file.name}</span>`;
+        li.style.cssText = 'padding: 10px; margin: 5px 0; background: #f5f5f5; border-radius: 5px; cursor: move; list-style: none;';
+        
+        li.addEventListener('dragstart', e => e.dataTransfer.setData('text/plain', index));
+        li.addEventListener('dragover', e => e.preventDefault());
+        li.addEventListener('drop', handleFileDrop);
+        
+        sortableFiles.appendChild(li);
+    });
+}
+
+function handleFileDrop(e) {
+    e.preventDefault();
+    const draggedIndex = parseInt(e.dataTransfer.getData('text/plain'));
+    const targetIndex = parseInt(e.target.closest('li').dataset.index);
+    
+    if (draggedIndex !== targetIndex) {
+        const draggedFile = uploadedFiles.splice(draggedIndex, 1)[0];
+        uploadedFiles.splice(targetIndex, 0, draggedFile);
+        displayFileList();
+        updateFileOrder();
+    }
+}
+
+function updateFileOrder() {
+    const newOrder = uploadedFiles.map(file => file.index);
+    fetch('/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order: newOrder })
+    });
+}
+
+function mergePDFs() {
+    status.innerHTML = 'Merging PDFs...';
+    mergeBtn.disabled = true;
+    
+    fetch('/merge', { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                status.innerHTML = 'PDFs merged successfully!';
+                fileList.style.display = 'none';
+                mergeBtn.style.display = 'none';
+                downloadBtn.style.display = 'inline-block';
+            } else {
+                status.innerHTML = data.error;
+                mergeBtn.disabled = false;
+            }
+        });
+}
+</script>
+{% endblock %}
